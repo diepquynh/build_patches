@@ -1,0 +1,29 @@
+From f1fe9e80c314d15ad34f13deb3e32c8300c76058 Mon Sep 17 00:00:00 2001
+From: Diep Quynh <remilia.1505@gmail.com>
+Date: Mon, 6 Jan 2020 09:52:10 +0700
+Subject: [PATCH 4/4] Revert "Makefile: Import GCC optimizations"
+
+This reverts commit 62fa874dfe71bce649c0fe708c2d13a5688b0fab.
+
+Signed-off-by: Diep Quynh <remilia.1505@gmail.com>
+---
+ Makefile | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index f1275661b1a8..f58a644fa5b9 100644
+--- a/Makefile
++++ b/Makefile
+@@ -668,8 +668,7 @@ else
+ ifdef CONFIG_PROFILE_ALL_BRANCHES
+ KBUILD_CFLAGS	+= -O2
+ else
+-KBUILD_CFLAGS   += -Ofast -ffast-math -funsafe-math-optimizations -march=armv8-a+crypto+fp16+crc
+-KBUILD_CFLAGS   += -mtune=cortex-a73.cortex-a53 -mcpu=cortex-a73.cortex-a53+crypto+fp16+crc
++KBUILD_CFLAGS   += -O2
+ endif
+ endif
+ 
+-- 
+2.17.1
+

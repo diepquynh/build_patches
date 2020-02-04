@@ -1,0 +1,30 @@
+From 2cb1b35dd83c07d69d4ae22a1484e9d82673f933 Mon Sep 17 00:00:00 2001
+From: Diep Quynh <remilia.1505@gmail.com>
+Date: Mon, 6 Jan 2020 09:52:00 +0700
+Subject: [PATCH 3/4] Revert "Makefile: Optimize for Exynos 8895"
+
+This reverts commit ca3fe6da541a11d8ad52d4abd226370b33ba263f.
+
+Signed-off-by: Diep Quynh <remilia.1505@gmail.com>
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 7ca4fb030181..f1275661b1a8 100644
+--- a/Makefile
++++ b/Makefile
+@@ -668,8 +668,8 @@ else
+ ifdef CONFIG_PROFILE_ALL_BRANCHES
+ KBUILD_CFLAGS	+= -O2
+ else
+-KBUILD_CFLAGS   += -Ofast -ffast-math -funsafe-math-optimizations
+-KBUILD_CFLAGS   += -mtune=exynos-m1.cortex-a53 -mcpu=exynos-m1.cortex-a53
++KBUILD_CFLAGS   += -Ofast -ffast-math -funsafe-math-optimizations -march=armv8-a+crypto+fp16+crc
++KBUILD_CFLAGS   += -mtune=cortex-a73.cortex-a53 -mcpu=cortex-a73.cortex-a53+crypto+fp16+crc
+ endif
+ endif
+ 
+-- 
+2.17.1
+

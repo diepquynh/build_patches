@@ -1,0 +1,397 @@
+From 48e7490d905f8c25e72d730fd3ab22160415ba1b Mon Sep 17 00:00:00 2001
+From: Jesse Chan <jc@lineageos.org>
+Date: Fri, 5 Jul 2019 10:02:05 +0300
+Subject: [PATCH 2/4] input: sec_ts: bind input_open/close to display state
+
+Co-authored-by: Noxxxious <f.catzgerald@gmail.com>
+Signed-off-by: corsicanu <corsicanu22@gmail.com>
+---
+ drivers/input/input.c                         |  4 +-
+ drivers/input/touchscreen/sec_ts/sec_ts.c     | 49 +++++++++++++++++
+ drivers/input/touchscreen/sec_ts/sec_ts.h     |  9 ++++
+ .../input/touchscreen/sec_ts_y661/sec_ts.c    | 49 +++++++++++++++++
+ .../input/touchscreen/sec_ts_y661/sec_ts.h    |  9 ++++
+ drivers/input/touchscreen/stm/fts_ts.c        | 52 ++++++++++++++++++-
+ drivers/input/touchscreen/stm/fts_ts.h        |  9 ++++
+ 7 files changed, 178 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/input/input.c b/drivers/input/input.c
+index abfb80fa2a84..d3b79a8da0b2 100644
+--- a/drivers/input/input.c
++++ b/drivers/input/input.c
+@@ -1109,7 +1109,7 @@ void input_close_device(struct input_handle *handle)
+ 	mutex_unlock(&dev->mutex);
+ }
+ EXPORT_SYMBOL(input_close_device);
+-static int input_enable_device(struct input_dev *dev)
++int input_enable_device(struct input_dev *dev)
+ {
+ 	int retval;
+ 
+@@ -1134,7 +1134,7 @@ out:
+ 	return retval;
+ }
+ 
+-static int input_disable_device(struct input_dev *dev)
++int input_disable_device(struct input_dev *dev)
+ {
+ 	int retval;
+ 
+diff --git a/drivers/input/touchscreen/sec_ts/sec_ts.c b/drivers/input/touchscreen/sec_ts/sec_ts.c
+index 20ef01b627ca..17d864954df9 100644
+--- a/drivers/input/touchscreen/sec_ts/sec_ts.c
++++ b/drivers/input/touchscreen/sec_ts/sec_ts.c
+@@ -41,6 +41,13 @@ extern void epen_disable_mode(int mode);
+ #endif
+ #endif
+ 
++#if defined(CONFIG_FB)
++static int touch_fb_notifier_callback(struct notifier_block *self,
++		unsigned long event, void *data);
++extern int input_enable_device(struct input_dev *dev);
++extern int input_disable_device(struct input_dev *dev);
++#endif
++
+ int sec_ts_read_information(struct sec_ts_data *ts);
+ 
+ #ifdef CONFIG_SECURE_TOUCH
+@@ -2340,6 +2347,16 @@ static int sec_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
+ 			__func__, client->irq);
+ #endif
+ 
++#ifdef CONFIG_FB
++	ts->fb_notif.notifier_call = touch_fb_notifier_callback;
++	ret = fb_register_client(&ts->fb_notif);
++	if (ret < 0) {
++		input_err(true, &ts->client->dev, "%s: Failed to register fb client\n",
++			__func__);
++		goto err_fb_client;
++	}
++#endif
++
+ 	/* need remove below resource @ remove driver */
+ #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+ 	sec_ts_raw_device_init(ts);
+@@ -2386,6 +2403,11 @@ static int sec_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
+ 	sec_ts_fn_remove(ts);
+ 	free_irq(client->irq, ts);
+ #endif
++#ifdef CONFIG_FB
++	fb_unregister_client(&ts->fb_notif);
++
++err_fb_client:
++#endif
+ err_irq:
+ 	if (ts->plat_data->support_dex) {
+ 		input_unregister_device(ts->input_dev_pad);
+@@ -2831,6 +2853,12 @@ static int sec_ts_remove(struct i2c_client *client)
+ 
+ 	input_info(true, &ts->client->dev, "%s\n", __func__);
+ 
++#if defined(CONFIG_FB)
++	if (fb_unregister_client(&ts->fb_notif))
++		input_info(true, &ts->client->dev,
++			"%s: Error occured while unregistering fb_notifier.\n", __func__);
++#endif
++
+ 	cancel_delayed_work_sync(&ts->work_read_info);
+ 	flush_delayed_work(&ts->work_read_info);
+ 
+@@ -3080,6 +3108,27 @@ static int sec_ts_pm_resume(struct device *dev)
+ 
+ 	return 0;
+ }
++
++#if defined(CONFIG_FB)
++static int touch_fb_notifier_callback(struct notifier_block *self,
++		unsigned long event, void *data)
++{
++	struct sec_ts_data *ts =
++		container_of(self, struct sec_ts_data, fb_notif);
++	struct fb_event *ev = (struct fb_event *)data;
++
++	if (ev && ev->data && event == FB_EVENT_BLANK) {
++		int *blank = (int *)ev->data;
++
++		if (*blank == FB_BLANK_UNBLANK)
++			input_enable_device(ts->input_dev);
++		else
++			input_disable_device(ts->input_dev);
++	}
++
++	return 0;
++}
++#endif
+ #endif
+ 
+ #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+diff --git a/drivers/input/touchscreen/sec_ts/sec_ts.h b/drivers/input/touchscreen/sec_ts/sec_ts.h
+index 617d088fba93..745fc4b30e6d 100644
+--- a/drivers/input/touchscreen/sec_ts/sec_ts.h
++++ b/drivers/input/touchscreen/sec_ts/sec_ts.h
+@@ -38,6 +38,11 @@
+ #include <linux/vmalloc.h>
+ #include <linux/wakelock.h>
+ 
++#if defined(CONFIG_FB)
++#include <linux/notifier.h>
++#include <linux/fb.h>
++#endif
++
+ #if defined(CONFIG_TRUSTONIC_TRUSTED_UI)
+ #include <linux/t-base-tui.h>
+ #endif
+@@ -677,6 +682,10 @@ struct sec_ts_data {
+ 	volatile bool input_closed;
+ 	long prox_power_off;
+ 
++#if defined(CONFIG_FB)
++	struct notifier_block fb_notif;
++#endif
++
+ 	int touch_count;
+ 	int tx_count;
+ 	int rx_count;
+diff --git a/drivers/input/touchscreen/sec_ts_y661/sec_ts.c b/drivers/input/touchscreen/sec_ts_y661/sec_ts.c
+index 597419bed525..00e833222b2b 100644
+--- a/drivers/input/touchscreen/sec_ts_y661/sec_ts.c
++++ b/drivers/input/touchscreen/sec_ts_y661/sec_ts.c
+@@ -39,6 +39,13 @@ static void sec_ts_input_close(struct input_dev *dev);
+ extern void epen_disable_mode(int mode);
+ #endif
+ 
++#if defined(CONFIG_FB)
++static int touch_fb_notifier_callback(struct notifier_block *self,
++		unsigned long event, void *data);
++extern int input_enable_device(struct input_dev *dev);
++extern int input_disable_device(struct input_dev *dev);
++#endif
++
+ int sec_ts_read_information(struct sec_ts_data *ts);
+ 
+ #ifdef CONFIG_SECURE_TOUCH
+@@ -2336,6 +2343,16 @@ static int sec_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
+ 			__func__, client->irq);
+ #endif
+ 
++#ifdef CONFIG_FB
++	ts->fb_notif.notifier_call = touch_fb_notifier_callback;
++	ret = fb_register_client(&ts->fb_notif);
++	if (ret < 0) {
++		input_err(true, &ts->client->dev, "%s: Failed to register fb client\n",
++			__func__);
++		goto err_fb_client;
++	}
++#endif
++
+ 	/* need remove below resource @ remove driver */
+ #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+ 	sec_ts_raw_device_init(ts);
+@@ -2382,6 +2399,11 @@ static int sec_ts_probe(struct i2c_client *client, const struct i2c_device_id *i
+ 	sec_ts_fn_remove(ts);
+ 	free_irq(client->irq, ts);
+ #endif
++#ifdef CONFIG_FB
++	fb_unregister_client(&ts->fb_notif);
++
++err_fb_client:
++#endif
+ err_irq:
+ 	if (ts->plat_data->support_dex) {
+ 		input_unregister_device(ts->input_dev_pad);
+@@ -2813,6 +2835,12 @@ static int sec_ts_remove(struct i2c_client *client)
+ 
+ 	input_info(true, &ts->client->dev, "%s\n", __func__);
+ 
++#if defined(CONFIG_FB)
++	if (fb_unregister_client(&ts->fb_notif))
++		input_info(true, &ts->client->dev,
++			"%s: Error occured while unregistering fb_notifier.\n", __func__);
++#endif
++
+ 	cancel_delayed_work_sync(&ts->work_read_info);
+ 	flush_delayed_work(&ts->work_read_info);
+ 
+@@ -3054,6 +3082,27 @@ static int sec_ts_pm_resume(struct device *dev)
+ 
+ 	return 0;
+ }
++
++#if defined(CONFIG_FB)
++static int touch_fb_notifier_callback(struct notifier_block *self,
++		unsigned long event, void *data)
++{
++	struct sec_ts_data *ts =
++		container_of(self, struct sec_ts_data, fb_notif);
++	struct fb_event *ev = (struct fb_event *)data;
++
++	if (ev && ev->data && event == FB_EVENT_BLANK) {
++		int *blank = (int *)ev->data;
++
++		if (*blank == FB_BLANK_UNBLANK)
++			input_enable_device(ts->input_dev);
++		else
++			input_disable_device(ts->input_dev);
++	}
++
++	return 0;
++}
++#endif
+ #endif
+ 
+ #ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+diff --git a/drivers/input/touchscreen/sec_ts_y661/sec_ts.h b/drivers/input/touchscreen/sec_ts_y661/sec_ts.h
+index b7a946ee4c91..c2488afd86ed 100644
+--- a/drivers/input/touchscreen/sec_ts_y661/sec_ts.h
++++ b/drivers/input/touchscreen/sec_ts_y661/sec_ts.h
+@@ -39,6 +39,11 @@
+ #include <linux/wakelock.h>
+ #include <linux/workqueue.h>
+ 
++#if defined(CONFIG_FB)
++#include <linux/notifier.h>
++#include <linux/fb.h>
++#endif
++
+ #if defined(CONFIG_TRUSTONIC_TRUSTED_UI)
+ #include <linux/t-base-tui.h>
+ #endif
+@@ -677,6 +682,10 @@ struct sec_ts_data {
+ 	volatile u8 touch_noise_status;
+ 	volatile bool input_closed;
+ 
++#if defined(CONFIG_FB)
++	struct notifier_block fb_notif;
++#endif
++
+ 	int touch_count;
+ 	int tx_count;
+ 	int rx_count;
+diff --git a/drivers/input/touchscreen/stm/fts_ts.c b/drivers/input/touchscreen/stm/fts_ts.c
+index 1fb0fe21577b..fb918389d0f5 100644
+--- a/drivers/input/touchscreen/stm/fts_ts.c
++++ b/drivers/input/touchscreen/stm/fts_ts.c
+@@ -116,6 +116,13 @@ static void fts_open_work(struct work_struct *work);
+ #endif
+ #endif
+ 
++#if defined(CONFIG_FB)
++static int touch_fb_notifier_callback(struct notifier_block *self,
++		unsigned long event, void *data);
++extern int input_enable_device(struct input_dev *dev);
++extern int input_disable_device(struct input_dev *dev);
++#endif
++
+ static int fts_stop_device(struct fts_ts_info *info, bool lpmode);
+ static int fts_start_device(struct fts_ts_info *info);
+ 
+@@ -2811,7 +2818,7 @@ static void fts_set_input_prop(struct fts_ts_info *info, struct input_dev *dev,
+ 
+ static int fts_probe(struct i2c_client *client, const struct i2c_device_id *idp)
+ {
+-	int retval;
++	int ret, retval;
+ 	struct fts_ts_info *info = NULL;
+ 	int i = 0;
+ 
+@@ -2871,6 +2878,16 @@ static int fts_probe(struct i2c_client *client, const struct i2c_device_id *idp)
+ 	mutex_init(&info->device_mutex);
+ 	mutex_init(&info->i2c_mutex);
+ 
++#ifdef CONFIG_FB
++	info->fb_notif.notifier_call = touch_fb_notifier_callback;
++	ret = fb_register_client(&info->fb_notif);
++	if (ret < 0) {
++		input_err(true, &info->client->dev, "%s: Failed to register fb client\n",
++			__func__);
++		goto err_fb_client;
++	}
++#endif
++
+ 	retval = fts_init(info);
+ 	if (retval) {
+ 		input_err(true, &info->client->dev, "%s: fts_init fail!\n", __func__);
+@@ -3049,6 +3066,11 @@ err_enable_irq:
+ 		input_unregister_device(info->input_dev_pad);
+ 		info->input_dev_pad = NULL;
+ 	}
++#ifdef CONFIG_FB
++	fb_unregister_client(&info->fb_notif);
++
++err_fb_client:
++#endif
+ err_register_input_pad:
+ 	input_unregister_device(info->input_dev);
+ 	info->input_dev = NULL;
+@@ -3092,6 +3114,13 @@ static int fts_remove(struct i2c_client *client)
+ #endif
+ 
+ 	input_info(true, &info->client->dev, "%s\n", __func__);
++
++#if defined(CONFIG_FB)
++	if (fb_unregister_client(&info->fb_notif))
++		input_info(true, &info->client->dev,
++			"%s: Error occured while unregistering fb_notifier.\n", __func__);
++#endif
++
+ 	info->shutdown_is_on_going = true;
+ 
+ 	disable_irq_nosync(info->client->irq);
+@@ -3884,6 +3913,27 @@ static int fts_resume(struct i2c_client *client)
+ }
+ #endif
+ 
++#if defined(CONFIG_FB)
++static int touch_fb_notifier_callback(struct notifier_block *self,
++		unsigned long event, void *data)
++{
++	struct fts_ts_info *info =
++		container_of(self, struct fts_ts_info, fb_notif);
++	struct fb_event *ev = (struct fb_event *)data;
++
++	if (ev && ev->data && event == FB_EVENT_BLANK) {
++		int *blank = (int *)ev->data;
++
++		if (*blank == FB_BLANK_UNBLANK)
++			input_enable_device(info->input_dev);
++		else
++			input_disable_device(info->input_dev);
++	}
++
++	return 0;
++}
++#endif
++
+ static const struct i2c_device_id fts_device_id[] = {
+ 	{FTS_TS_DRV_NAME, 0},
+ 	{}
+diff --git a/drivers/input/touchscreen/stm/fts_ts.h b/drivers/input/touchscreen/stm/fts_ts.h
+index 039631c363c3..1d397db4f6c9 100644
+--- a/drivers/input/touchscreen/stm/fts_ts.h
++++ b/drivers/input/touchscreen/stm/fts_ts.h
+@@ -5,6 +5,11 @@
+ #include <linux/input/sec_cmd.h>
+ #include <linux/wakelock.h>
+ 
++#if defined(CONFIG_FB)
++#include <linux/notifier.h>
++#include <linux/fb.h>
++#endif
++
+ #undef FTS_SUPPORT_TOUCH_KEY
+ #define FTS_SUPPORT_PRESSURE_SENSOR
+ #define FTS_SUPPORT_STRINGLIB
+@@ -571,6 +576,10 @@ struct fts_ts_info {
+ 	bool tsk_led_enabled;
+ #endif
+ 
++#if defined(CONFIG_FB)
++	struct notifier_block fb_notif;
++#endif
++
+ 	int touch_count;
+ 	struct fts_finger finger[FINGER_MAX];
+ 
+-- 
+2.17.1
+
