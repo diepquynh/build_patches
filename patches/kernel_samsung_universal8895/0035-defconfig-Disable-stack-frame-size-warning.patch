@@ -1,0 +1,37 @@
+From 2291af9918e7a31f764aedc17290950736065003 Mon Sep 17 00:00:00 2001
+From: Sultan Alsawaf <sultan@kerneltoast.com>
+Date: Fri, 13 Sep 2019 01:04:43 +1000
+Subject: [PATCH 35/86] defconfig: Disable stack frame size warning
+
+---
+ arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig | 1 +
+ arch/arm64/configs/exynos8895_greatlte_defconfig           | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig b/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
+index f1ea978e9cea..91052c9bd843 100644
+--- a/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
++++ b/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
+@@ -687,6 +687,7 @@ CONFIG_PSTORE_CONSOLE=y
+ CONFIG_PRINTK_TIME=y
+ CONFIG_PRINTK_PROCESS=y
+ CONFIG_DEBUG_INFO=y
++CONFIG_FRAME_WARN=0
+ CONFIG_MAGIC_SYSRQ=y
+ CONFIG_LOCKUP_DETECTOR=y
+ CONFIG_BOOTPARAM_HARDLOCKUP_PANIC=y
+diff --git a/arch/arm64/configs/exynos8895_greatlte_defconfig b/arch/arm64/configs/exynos8895_greatlte_defconfig
+index f977fe3c839e..7a783dcca6a1 100644
+--- a/arch/arm64/configs/exynos8895_greatlte_defconfig
++++ b/arch/arm64/configs/exynos8895_greatlte_defconfig
+@@ -700,6 +700,7 @@ CONFIG_PSTORE_CONSOLE=y
+ CONFIG_PRINTK_TIME=y
+ CONFIG_PRINTK_PROCESS=y
+ CONFIG_DEBUG_INFO=y
++CONFIG_FRAME_WARN=0
+ CONFIG_MAGIC_SYSRQ=y
+ CONFIG_LOCKUP_DETECTOR=y
+ CONFIG_BOOTPARAM_HARDLOCKUP_PANIC=y
+-- 
+2.17.1
+

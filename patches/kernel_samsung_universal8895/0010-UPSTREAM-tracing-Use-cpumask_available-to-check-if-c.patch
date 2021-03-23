@@ -1,0 +1,48 @@
+From 697437a7c0ca9488fee3184799f52ab2d5b468bf Mon Sep 17 00:00:00 2001
+From: Matthias Kaehlcke <mka@chromium.org>
+Date: Fri, 21 Apr 2017 16:41:10 -0700
+Subject: [PATCH 10/86] UPSTREAM: tracing: Use cpumask_available() to check if
+ cpumask variable may be used
+
+This fixes the following clang warning:
+
+kernel/trace/trace.c:3231:12: warning: address of array 'iter->started'
+  will always evaluate to 'true' [-Wpointer-bool-conversion]
+        if (iter->started)
+
+Link: http://lkml.kernel.org/r/20170421234110.117075-1-mka@chromium.org
+
+Signed-off-by: Matthias Kaehlcke <mka@chromium.org>
+Signed-off-by: Steven Rostedt (VMware) <rostedt@goodmis.org>
+(cherry picked from commit 4dbbe2d8e95c351157f292ece067f985c30c7b53)
+Bug: 78886293
+Change-Id: Ib17a68ce55ca80b04bdea2d232f8ca9f88b1b8a3
+Signed-off-by: Alistair Strachan <astrachan@google.com>
+---
+ kernel/trace/trace.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index e838133c2563..65b632336636 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2733,13 +2733,14 @@ static void test_cpu_buff_start(struct trace_iterator *iter)
+ 	if (!(iter->iter_flags & TRACE_FILE_ANNOTATE))
+ 		return;
+ 
+-	if (iter->started && cpumask_test_cpu(iter->cpu, iter->started))
++	if (cpumask_available(iter->started) &&
++	    cpumask_test_cpu(iter->cpu, iter->started))
+ 		return;
+ 
+ 	if (per_cpu_ptr(iter->trace_buffer->data, iter->cpu)->skipped_entries)
+ 		return;
+ 
+-	if (iter->started)
++	if (cpumask_available(iter->started))
+ 		cpumask_set_cpu(iter->cpu, iter->started);
+ 
+ 	/* Don't print started cpu buffer for the first entry of the trace */
+-- 
+2.17.1
+

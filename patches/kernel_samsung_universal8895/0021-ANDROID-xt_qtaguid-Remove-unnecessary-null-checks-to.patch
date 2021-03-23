@@ -1,0 +1,44 @@
+From 46534b57de52cb04ad8417f91e8acac9c37f5042 Mon Sep 17 00:00:00 2001
+From: Nathan Chancellor <natechancellor@gmail.com>
+Date: Sat, 31 Mar 2018 20:44:45 -0700
+Subject: [PATCH 21/86] ANDROID: xt_qtaguid: Remove unnecessary null checks to
+ ifa_label
+
+'ifa_label' will never be NULL since it isn't a plain pointer but an
+array of char values.
+
+../net/netfilter/xt_qtaguid.c:971:11: warning: address of array
+'ifa->ifa_label' will always evaluate to 'true'
+[-Wpointer-bool-conversion]
+                        ifa->ifa_label ? ifa->ifa_label : "(null)");
+                        ~~~~~^~~~~~~~~ ~
+../net/netfilter/xt_qtaguid.c:972:13: warning: address of array
+'ifa->ifa_label' will always evaluate to 'true'
+[-Wpointer-bool-conversion]
+                if (ifa->ifa_label && !strcmp(ifname, ifa->ifa_label))
+                    ~~~~~^~~~~~~~~ ~~
+
+Change-Id: I3c87a5d4b830aaa21a59e9c39cfe0a1d60d7f830
+Signed-off-by: Nathan Chancellor <natechancellor@gmail.com>
+---
+ net/netfilter/xt_qtaguid.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/net/netfilter/xt_qtaguid.c b/net/netfilter/xt_qtaguid.c
+index d1de57fa3ab8..d67e762ecb56 100644
+--- a/net/netfilter/xt_qtaguid.c
++++ b/net/netfilter/xt_qtaguid.c
+@@ -968,8 +968,8 @@ static void iface_stat_create(struct net_device *net_dev,
+ 			IF_DEBUG("qtaguid: iface_stat: create(%s): "
+ 				 "ifa=%p ifa_label=%s\n",
+ 				 ifname, ifa,
+-				 ifa->ifa_label ? ifa->ifa_label : "(null)");
+-			if (ifa->ifa_label && !strcmp(ifname, ifa->ifa_label))
++				 ifa->ifa_label);
++			if (!strcmp(ifname, ifa->ifa_label))
+ 				break;
+ 		}
+ 	}
+-- 
+2.17.1
+

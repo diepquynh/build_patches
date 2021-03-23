@@ -1,0 +1,38 @@
+From d51ee70e38dc9bd901ca29d1416858ba9b9f9e6a Mon Sep 17 00:00:00 2001
+From: Michael Benedict <michaelbt@live.com>
+Date: Sat, 5 Oct 2019 12:34:47 +1000
+Subject: [PATCH 74/86] defconfig: set blk loop min to 16
+
+Signed-off-by: Michael Benedict <michaelbt@live.com>
+---
+ arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig | 1 +
+ arch/arm64/configs/exynos8895_greatlte_defconfig           | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig b/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
+index f95c9fb1670d..aa2bf4eb6cd4 100644
+--- a/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
++++ b/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
+@@ -225,6 +225,7 @@ CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
+ CONFIG_CMA_SIZE_MBYTES=20
+ CONFIG_ZRAM=y
+ CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_LOOP_MIN_COUNT=16
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_SIZE=8192
+ CONFIG_UID_SYS_STATS=y
+diff --git a/arch/arm64/configs/exynos8895_greatlte_defconfig b/arch/arm64/configs/exynos8895_greatlte_defconfig
+index 0a8d9ae6c612..bbeb48fea9b6 100644
+--- a/arch/arm64/configs/exynos8895_greatlte_defconfig
++++ b/arch/arm64/configs/exynos8895_greatlte_defconfig
+@@ -229,6 +229,7 @@ CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
+ CONFIG_CMA_SIZE_MBYTES=20
+ CONFIG_ZRAM=y
+ CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_LOOP_MIN_COUNT=16
+ CONFIG_BLK_DEV_RAM=y
+ CONFIG_BLK_DEV_RAM_SIZE=8192
+ CONFIG_UID_SYS_STATS=y
+-- 
+2.17.1
+

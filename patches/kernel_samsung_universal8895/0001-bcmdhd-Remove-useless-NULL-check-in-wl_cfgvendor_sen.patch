@@ -1,0 +1,32 @@
+From 52889b04fb71b27ed3bfeda52f3437d1cf9e281f Mon Sep 17 00:00:00 2001
+From: Diep Quynh <remilia.1505@gmail.com>
+Date: Thu, 4 Feb 2021 13:24:42 +0700
+Subject: [PATCH 01/86] bcmdhd: Remove useless NULL check in
+ wl_cfgvendor_send_hang_event()
+
+The variable being checked is a fixed array defined in the struct's stack,
+so a NULL check is not necessary
+
+Signed-off-by: Diep Quynh <remilia.1505@gmail.com>
+---
+ drivers/net/wireless/bcmdhd4361/wl_cfgvendor.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/bcmdhd4361/wl_cfgvendor.c b/drivers/net/wireless/bcmdhd4361/wl_cfgvendor.c
+index 2aa28c1be559..66c0ecc91f1f 100644
+--- a/drivers/net/wireless/bcmdhd4361/wl_cfgvendor.c
++++ b/drivers/net/wireless/bcmdhd4361/wl_cfgvendor.c
+@@ -7356,9 +7356,7 @@ wl_cfgvendor_send_hang_event(struct net_device *dev, u16 reason, char *string, i
+ 	}
+ 
+ #ifdef DHD_LOG_DUMP
+-	if (dhd->debug_dump_time_hang_str) {
+-		dhd_logdump_cookie_save(dhd, dhd->debug_dump_time_hang_str, "HANG");
+-	}
++	dhd_logdump_cookie_save(dhd, dhd->debug_dump_time_hang_str, "HANG");
+ #endif /* DHD_LOG_DUMP */
+ 
+ 	if (dhd) {
+-- 
+2.17.1
+

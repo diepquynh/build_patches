@@ -1,0 +1,40 @@
+From 8c484927d6978d9994aac1dff964f19cef231dee Mon Sep 17 00:00:00 2001
+From: Michael Benedict <michaelbt@live.com>
+Date: Sat, 12 Oct 2019 23:04:47 +1100
+Subject: [PATCH 76/86] defconfig: set extra cmdline for apex
+
+Signed-off-by: Michael Benedict <michaelbt@live.com>
+---
+ arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig | 2 ++
+ arch/arm64/configs/exynos8895_greatlte_defconfig           | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig b/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
+index aa2bf4eb6cd4..c4bd99e1431a 100644
+--- a/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
++++ b/arch/arm64/configs/exynos8895_dreamlte_dream2lte_defconfig
+@@ -62,6 +62,8 @@ CONFIG_CP15_BARRIER_EMULATION=y
+ CONFIG_SETEND_EMULATION=y
+ CONFIG_ARM64_SW_TTBR0_PAN=y
+ # CONFIG_ARM64_UAO is not set
++CONFIG_CMDLINE="loop.max_part=7"
++CONFIG_CMDLINE_EXTEND=y
+ # CONFIG_EFI is not set
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_COMPAT=y
+diff --git a/arch/arm64/configs/exynos8895_greatlte_defconfig b/arch/arm64/configs/exynos8895_greatlte_defconfig
+index bbeb48fea9b6..ffc13de8ba67 100644
+--- a/arch/arm64/configs/exynos8895_greatlte_defconfig
++++ b/arch/arm64/configs/exynos8895_greatlte_defconfig
+@@ -65,6 +65,8 @@ CONFIG_CP15_BARRIER_EMULATION=y
+ CONFIG_SETEND_EMULATION=y
+ CONFIG_ARM64_SW_TTBR0_PAN=y
+ # CONFIG_ARM64_UAO is not set
++CONFIG_CMDLINE="loop.max_part=7"
++CONFIG_CMDLINE_EXTEND=y
+ # CONFIG_EFI is not set
+ # CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+ CONFIG_COMPAT=y
+-- 
+2.17.1
+

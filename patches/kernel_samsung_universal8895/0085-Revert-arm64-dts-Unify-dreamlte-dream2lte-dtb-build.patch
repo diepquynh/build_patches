@@ -1,0 +1,113 @@
+From 7ccaa51a66f1c84ef7c14aa2298f5cd3fb071a26 Mon Sep 17 00:00:00 2001
+From: Diep Quynh <remilia.1505@gmail.com>
+Date: Thu, 4 Feb 2021 02:45:48 +0700
+Subject: [PATCH 85/86] Revert "arm64: dts: Unify dreamlte/dream2lte dtb build"
+
+This reverts commit 4854b199e32e789049c514303a8c3b7130c20a70.
+
+Signed-off-by: Diep Quynh <remilia.1505@gmail.com>
+---
+ arch/arm64/Makefile                 | 25 +++----------------------
+ arch/arm64/boot/Makefile            | 16 +++-------------
+ arch/arm64/boot/dts/exynos/Makefile |  6 +++---
+ 3 files changed, 9 insertions(+), 38 deletions(-)
+
+diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+index d0a004201e2a..0ea66971b094 100644
+--- a/arch/arm64/Makefile
++++ b/arch/arm64/Makefile
+@@ -142,12 +142,7 @@ endif
+ KBUILD_DTBS	:= dtbs
+ 
+ ifeq ($(CONFIG_EXYNOS_DTBTOOL),y)
+-ifeq ($(CONFIG_CAMERA_DREAM2),y)
+-KBUILD_DTBS	+= dtb_dream2lte.img
+-KBUILD_DTBS	+= dtb_dreamlte.img
+-else ifeq ($(CONFIG_CAMERA_GREAT),y)
+-KBUILD_DTBS	+= dtb_greatlte.img
+-endif
++KBUILD_DTBS	+= dtb.img
+ endif
+ 
+ all:	$(KBUILD_IMAGE) $(KBUILD_DTBS)
+@@ -166,12 +161,7 @@ zinstall install: vmlinux
+ %.dtb: scripts
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
+ 
+-PHONY += dtbs dtbs_install
+-ifeq ($(CONFIG_CAMERA_DREAM2),y)
+-	PHONY += dtb_dream2.img dtb_dream.img
+-else ifeq ($(CONFIG_CAMERA_GREAT),y)
+-	PHONY += dtb_great.img
+-endif
++PHONY += dtbs dtbs_install dtb.img
+ 
+ dtbs: prepare scripts
+ 	$(Q)$(MAKE) $(build)=$(boot)/dts
+@@ -179,18 +169,9 @@ dtbs: prepare scripts
+ dtbs_install:
+ 	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts
+ 
+-ifeq ($(CONFIG_CAMERA_DREAM2),y)
+-dtb_dream2lte.img: prepare scripts dtbs
+-	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+-
+-dtb_dreamlte.img: prepare scripts dtbs
++dtb.img: prepare scripts dtbs
+ 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+ 
+-else ifeq ($(CONFIG_CAMERA_GREAT),y)
+-dtb_greatlte.img: prepare scripts dtbs
+-	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+-endif
+-
+ Image-dtb Image.gz-dtb: vmlinux scripts dtbs
+ 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+ 
+diff --git a/arch/arm64/boot/Makefile b/arch/arm64/boot/Makefile
+index 04f2aadbde6f..5b2b92225d6b 100644
+--- a/arch/arm64/boot/Makefile
++++ b/arch/arm64/boot/Makefile
+@@ -27,21 +27,11 @@ endif
+ DTB_OBJS := $(addprefix $(obj)/dts/,$(DTB_LIST))
+ 
+ ifeq ($(CONFIG_EXYNOS_DTBTOOL),y)
+-targets += dtb_dream2lte.img
+-targets += dtb_dreamlte.img
+-targets += dtb_greatlte.img
++targets += dtb.img
+ 
+-DTB_DREAM2 += $(shell find -L $(obj)/dts/ -name \*dream2lte*.dtb)
+-DTB_DREAM += $(shell find -L $(obj)/dts/ -name \*dreamlte*.dtb)
+-DTB_GREAT += $(shell find -L $(obj)/dts/ -name \*greatlte*.dtb)
++DTB_OBJS += $(shell find -L $(obj)/dts/ -name \*.dtb)
+ 
+-$(obj)/dtb_dream2lte.img: $(DTB_DREAM2) FORCE
+-	$(call if_changed,dtbtool_exynos)
+-
+-$(obj)/dtb_dreamlte.img: $(DTB_DREAM) FORCE
+-	$(call if_changed,dtbtool_exynos)
+-
+-$(obj)/dtb_greatlte.img: $(DTB_GREAT) FORCE
++$(obj)/dtb.img: $(DTB_OBJS) FORCE
+ 	$(call if_changed,dtbtool_exynos)
+ endif
+ 
+diff --git a/arch/arm64/boot/dts/exynos/Makefile b/arch/arm64/boot/dts/exynos/Makefile
+index 3442efac3e15..1acb914c0ec5 100644
+--- a/arch/arm64/boot/dts/exynos/Makefile
++++ b/arch/arm64/boot/dts/exynos/Makefile
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+-dtb-$(CONFIG_CAMERA_DREAM2) += exynos8895-dream2lte_eur_open_10.dtb
+-dtb-$(CONFIG_CAMERA_DREAM2) += exynos8895-dreamlte_eur_open_10.dtb
+-dtb-$(CONFIG_CAMERA_GREAT) += exynos8895-greatlte_eur_open_06.dtb
++dtb-$(CONFIG_SOC_EXYNOS8895) += exynos8895-dream2lte_eur_open_10.dtb
++dtb-$(CONFIG_SOC_EXYNOS8895) += exynos8895-dreamlte_eur_open_10.dtb
++dtb-$(CONFIG_SOC_EXYNOS8895) += exynos8895-greatlte_eur_open_06.dtb
+ 
+ always            := $(dtb-y) $(dtbo-y)
+ clean-files       := *.dtb*
+-- 
+2.17.1
+

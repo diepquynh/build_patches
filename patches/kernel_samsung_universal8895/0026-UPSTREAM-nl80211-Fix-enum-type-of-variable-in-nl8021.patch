@@ -1,0 +1,35 @@
+From 89015cd400a1114c5bcf7cbb7ea859ec2b4f146a Mon Sep 17 00:00:00 2001
+From: Matthias Kaehlcke <mka@chromium.org>
+Date: Mon, 17 Apr 2017 15:59:52 -0700
+Subject: [PATCH 26/86] UPSTREAM: nl80211: Fix enum type of variable in
+ nl80211_put_sta_rate()
+
+rate_flg is of type 'enum nl80211_attrs', however it is assigned with
+'enum nl80211_rate_info' values. Change the type of rate_flg accordingly.
+
+Signed-off-by: Matthias Kaehlcke <mka@chromium.org>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+(cherry picked from commit bbf67e450a5dc2a595e1e7a67b4869f1a7f5a338)
+Bug: 78886293
+Change-Id: I5423e226dc65375245f8ca6261c025d967552f17
+Signed-off-by: Alistair Strachan <astrachan@google.com>
+---
+ net/wireless/nl80211.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
+index 4a396d234a0c..c0dd7fc2eef9 100644
+--- a/net/wireless/nl80211.c
++++ b/net/wireless/nl80211.c
+@@ -3598,7 +3598,7 @@ static bool nl80211_put_sta_rate(struct sk_buff *msg, struct rate_info *info,
+ 	struct nlattr *rate;
+ 	u32 bitrate;
+ 	u16 bitrate_compat;
+-	enum nl80211_attrs rate_flg;
++	enum nl80211_rate_info rate_flg;
+ 
+ 	rate = nla_nest_start(msg, attr);
+ 	if (!rate)
+-- 
+2.17.1
+
